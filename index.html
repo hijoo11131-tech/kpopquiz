@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>케이팝왕 테스트</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:#e8e8e4}
+body{background:#f5f5f0;color:#111;font-family:'Noto Sans KR',sans-serif;min-height:100vh;overscroll-behavior:none;max-width:430px;margin:0 auto;box-shadow:0 0 40px rgba(0,0,0,.12)}
+.screen{display:none;flex-direction:column;align-items:center;width:100%;min-height:100vh}
+.screen.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* INTRO */
+#sIntro{justify-content:center;gap:20px;text-align:center;padding:40px 24px 60px}
+.intro-label{font-size:11px;letter-spacing:3px;color:#aaa;font-weight:700}
+.intro-title{font-size:54px;font-weight:900;letter-spacing:-2px;line-height:1}
+.intro-sub{font-size:14px;color:#777;line-height:1.7}
+.tier-box{width:100%;max-width:320px;border:1.5px solid #ddd;border-radius:14px;overflow:hidden;background:#fff}
+.tier-row{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid #f0f0f0;font-size:13px}
+.tier-row:last-child{border-bottom:none}
+.tier-row b{font-weight:700}
+.tier-pts{color:#aaa;font-size:12px}
+.btn-start{width:100%;max-width:320px;padding:17px;background:#111;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;transition:opacity .15s}
+.btn-start:active{opacity:.75}
+
+/* GAME */
+#sGame{padding:0;justify-content:flex-start}
+.g-top{width:100%;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #e8e8e8;position:sticky;top:0;background:#f5f5f0;z-index:10}
+.g-score{font-size:20px;font-weight:900;letter-spacing:-1px}
+.g-qnum{font-size:12px;color:#aaa;font-weight:700}
+.prog{width:100%;height:2px;background:#e8e8e8}
+.prog-fill{height:100%;background:#111;transition:width .4s ease}
+.g-body{width:100%;padding:20px 20px 32px;display:flex;flex-direction:column;gap:14px;animation:slideUp .28s ease}
+.q-type{font-size:11px;letter-spacing:2px;color:#aaa;font-weight:700;text-transform:uppercase}
+
+.img-box{width:100%;aspect-ratio:1;background:#e8e8e4;border-radius:14px;overflow:hidden;position:relative;border:1.5px solid #e0e0e0}
+.img-box.wide{aspect-ratio:4/3}
+.dual-img{width:100%;height:100%;position:relative;display:block}
+.dual-img .img-crop{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;transition:opacity .7s ease}
+.dual-img .img-full{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;opacity:0;transition:opacity .7s ease}
+.dual-img.revealed .img-crop{opacity:0}
+.dual-img.revealed .img-full{opacity:1}
+
+.choices{display:flex;flex-direction:column;gap:8px}
+.c-btn{width:100%;padding:14px 16px;background:#fff;border:1.5px solid #e8e8e8;border-radius:12px;color:#111;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:border-color .1s,background .1s;user-select:none}
+.c-btn:active{background:#f0f0ec}
+.c-letter{width:28px;height:28px;border-radius:7px;background:#f0f0ec;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;color:#aaa}
+.c-btn.correct{background:#e8fff5;border-color:#00c06a!important;animation:pop .3s ease}
+.c-btn.wrong{background:#fff0f0;border-color:#e00!important;animation:shake .3s ease}
+.c-btn.correct .c-letter{background:#00c06a;color:#fff}
+.c-btn.wrong .c-letter{background:#e00;color:#fff}
+.c-btn:disabled{cursor:default;pointer-events:none}
+
+.auto-bar-wrap{width:100%;height:3px;background:#e8e8e8;border-radius:2px;overflow:hidden;opacity:0;transition:opacity .2s}
+.auto-bar-wrap.on{opacity:1}
+.auto-bar{height:100%;background:#111;transform-origin:left;transition:transform linear}
+
+/* RESULT */
+#sResult{gap:0;padding:0;align-items:stretch}
+.r-top{padding:28px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:14px}
+#shareCard{width:100%;background:#fff;border-radius:14px;border:1.5px solid #e8e8e8;overflow:hidden;display:flex;flex-direction:column;align-items:center}
+#shareCard .card-meme img{width:100%;display:block;object-fit:cover}
+#shareCard .card-meme-fallback{font-size:80px;padding:36px;text-align:center;width:100%}
+#shareCard .card-body{padding:20px 18px 24px;text-align:center;width:100%}
+.card-tier{font-size:12px;font-weight:700;color:#aaa;letter-spacing:1px;margin-bottom:4px}
+.card-score{font-size:52px;font-weight:900;letter-spacing:-3px;line-height:1;margin-bottom:6px}
+.card-desc{font-size:14px;color:#666;line-height:1.65;white-space:pre-line;margin-bottom:16px}
+.card-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.card-stat{background:#f5f5f0;border-radius:10px;padding:12px 4px;text-align:center}
+.card-stat-n{font-size:22px;font-weight:900}
+.card-stat-l{font-size:11px;color:#aaa;margin-top:2px}
+.card-watermark{font-size:11px;color:#ccc;font-weight:700;letter-spacing:2px;margin-top:12px}
+.r-btns{display:flex;flex-direction:column;gap:8px;width:100%}
+.r-btn{width:100%;padding:15px;border-radius:12px;font-size:16px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;border:none;transition:opacity .15s}
+.r-btn:active{opacity:.75}
+.r-btn-dark{background:#111;color:#fff}
+.r-btn-outline{background:#fff;color:#111;border:1.5px solid #ddd}
+
+/* 오답노트 */
+.review-section{width:100%;padding:0 20px 60px}
+.review-title{font-size:13px;font-weight:700;color:#aaa;letter-spacing:1px;margin-bottom:12px;text-align:center}
+.review-list{display:flex;flex-direction:column;gap:12px}
+.review-item{background:#fff;border-radius:14px;border:1.5px solid #e8e8e8;overflow:hidden}
+.review-item.wrong-item{border-color:#ffcccc}
+.review-item.correct-item{border-color:#c8f0e0}
+.review-full-img{width:100%;display:block;object-fit:cover;max-height:220px}
+.review-body{padding:14px 16px}
+.review-tag{font-size:10px;letter-spacing:2px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.review-badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-bottom:10px}
+.badge-correct{background:#e8fff5;color:#007a44}
+.badge-wrong{background:#fff0f0;color:#cc0000}
+.review-choices{display:flex;flex-direction:column;gap:5px}
+.review-choice{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:7px 10px;border-radius:8px;border:1px solid #f0f0f0;line-height:1.4}
+.review-choice.r-correct{background:#e8fff5;border-color:#00c06a;color:#007a44}
+.review-choice.r-wrong{background:#fff0f0;border-color:#ffaaaa;color:#cc0000;text-decoration:line-through}
+.review-choice.r-neutral{color:#aaa}
+.review-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:#e0e0e0}
+.review-choice.r-correct .review-dot{background:#00c06a}
+.review-choice.r-wrong .review-dot{background:#e00}
+</style>
+</head>
+<body>
+
+<!-- INTRO -->
+<div class="screen active" id="sIntro">
+  <div class="intro-label">K-POP BLIND TEST</div>
+  <div class="intro-title">케이팝왕<br>테스트</div>
+  <div class="intro-sub">진짜 팬만 통과 가능<br>뮤비 장면 + 얼굴 일부로 맞춰봐</div>
+  <div class="tier-box">
+    <div class="tier-row"><b>👑 케이팝왕</b>        <span class="tier-pts">15문제 전부</span></div>
+    <div class="tier-row"><b>⭐ 케이팝 잘 아네</b>  <span class="tier-pts">12~14문제</span></div>
+    <div class="tier-row"><b>🎵 꽤 잘 아네</b>      <span class="tier-pts">10~11문제</span></div>
+    <div class="tier-row"><b>🙂 케이팝 좋아하는 대중</b><span class="tier-pts">6~9문제</span></div>
+    <div class="tier-row"><b>🫥 머글</b>            <span class="tier-pts">4~5문제</span></div>
+    <div class="tier-row"><b>🪨 문명과 먼</b>       <span class="tier-pts">0~3문제</span></div>
+  </div>
+  <button class="btn-start" onclick="G.start()">테스트 시작 →</button>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="sGame">
+  <div class="g-top">
+    <div class="g-score" id="hScore">0점</div>
+    <div class="g-qnum" id="hQnum">1 / 14</div>
+  </div>
+  <div class="prog"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+  <div class="g-body" id="gBody">
+    <div class="q-type" id="qTag"></div>
+    <div id="mediaWrap"></div>
+    <div class="choices" id="choices"></div>
+    <div class="auto-bar-wrap" id="autoWrap">
+      <div class="auto-bar" id="autoBar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="screen" id="sResult">
+  <div class="r-top" style="width:100%">
+    <div id="shareCard">
+      <div id="cardMeme"></div>
+      <div class="card-body">
+        <div class="card-tier"  id="rTier"></div>
+        <div class="card-score" id="rScore"></div>
+        <div class="card-desc"  id="rDesc"></div>
+        <div class="card-stats">
+          <div class="card-stat"><div class="card-stat-n" id="rCorrect">-</div><div class="card-stat-l">정답</div></div>
+          <div class="card-stat"><div class="card-stat-n" id="rWrong">-</div><div class="card-stat-l">오답</div></div>
+        </div>
+        <div class="card-watermark">KPOP BLIND TEST</div>
+      </div>
+    </div>
+    <div class="r-btns" style="width:100%">
+      <button class="r-btn r-btn-dark" id="savBtn" onclick="G.saveImage()">결과 이미지 저장 📸</button>
+      <button class="r-btn r-btn-outline" onclick="G.retry()">다시 도전 🔄</button>
+    </div>
+  </div>
+  <div class="review-section">
+    <div class="review-title">— 문제 리뷰 —</div>
+    <div class="review-list" id="reviewList"></div>
+  </div>
+</div>
+
+<script>
+const IMGS = {
+  tier1: "images/tier1.jpeg",
+  tier2: "images/tier2.jpeg",
+  tier3: "images/tier3.jpeg",
+  tier4: "images/tier4.jpeg",
+  tier5: "images/tier5.jpeg",
+  tier6: "images/tier6.jpeg",
+  jay_crop: "images/jay_crop.png",
+  jay_full: "images/jay_full.png",
+  allday_crop: "images/allday_crop.png",
+  allday_full: "images/allday_full.png",
+  lesserafim_crop: "images/lesserafim_crop.png",
+  lesserafim_full: "images/lesserafim_full.png",
+  cortis_crop: "images/cortis_crop.png",
+  cortis_full: "images/cortis_full.png",
+  illit_crop: "images/illit_crop.png",
+  illit_full: "images/illit_full.png",
+  h2h_crop: "images/h2h_crop.png",
+  h2h_full: "images/h2h_full.png",
+  kiya_crop: "images/kiya_crop.png",
+  kiya_full: "images/kiya_full.png",
+  euijoo_crop: "images/euijoo_crop.png",
+  euijoo_full: "images/euijoo_full.png",
+  arno_crop: "images/arno_crop.png",
+  arno_full: "images/arno_full.png",
+  ian_crop: "images/ian_crop.png",
+  ian_full: "images/ian_full.png",
+  junhwi_crop: "images/junhwi_crop.png",
+  junhwi_full: "images/junhwi_full.png",
+  jimin_crop: "images/jimin_crop.png",
+  jimin_full: "images/jimin_full.png",
+  chaewon_crop: "images/chaewon_crop.png",
+  chaewon_full: "images/chaewon_full.png",
+  suin_crop: "images/suin_crop.png",
+  suin_full: "images/suin_full.png",
+  aisa_crop: "images/aisa_crop.png",
+  aisa_full: "images/aisa_full.png",
+};
+
+
+const QUESTIONS = [
+  // ── 뮤비 문제 ──
+  {
+    tag: '🎬 어떤 뮤직비디오 장면일까?',
+    imgCrop: IMGS.allday_crop, imgFull: IMGS.allday_full,
+    choices: ['ALLDAY PROJECT - ONE MORE TIME','ALLDAY PROJECT - FAMOUS','ALLDAY PROJECT - WHERE YOU AT','ALLDAY PROJECT - WICKED'],
+    answer: 0, wide: true
+  },
+  {
+    tag: '🎬 어떤 뮤직비디오 장면일까?',
+    imgCrop: IMGS.lesserafim_crop, imgFull: IMGS.lesserafim_full,
+    choices: ['LE SSERAFIM - FEARLESS','LE SSERAFIM - CELEBRATION','LE SSERAFIM - UNFORGIVEN','LE SSERAFIM - CRAZY'],
+    answer: 1, wide: true
+  },
+  {
+    tag: '🎬 어떤 뮤직비디오 장면일까?',
+    imgCrop: IMGS.cortis_crop, imgFull: IMGS.cortis_full,
+    choices: ['CORTIS - YOUNGCREATORCREW','CORTIS - GO!','CORTIS - TNT','CORTIS - REDRED'],
+    answer: 3, wide: true
+  },
+  {
+    tag: '🎬 어떤 뮤직비디오 장면일까?',
+    imgCrop: IMGS.illit_crop, imgFull: IMGS.illit_full,
+    choices: ["ILLIT - Cherish(My Love)","ILLIT - jellyous","ILLIT - It's Me","ILLIT - Tick-Tack"],
+    answer: 2, wide: true
+  },
+  {
+    tag: '🎬 어떤 뮤직비디오 장면일까?',
+    imgCrop: IMGS.h2h_crop, imgFull: IMGS.h2h_full,
+    choices: ['Hearts2Hearts - FOCUS','Hearts2Hearts - The Chase','Hearts2Hearts - STYLE','Hearts2Hearts - RUDE!'],
+    answer: 3, wide: true
+  },
+  // ── 얼굴 문제 ──
+  {
+    tag: '👀 누구의 얼굴 일부일까?',
+    imgCrop: IMGS.kiya_crop, imgFull: IMGS.kiya_full,
+    choices: ['KiiiKiii - 키야','KiiiKiii - 이솔','Hearts2Hearts - 에이나','Hearts2Hearts - 예온'],
+    answer: 0
+  },
+  {
+    tag: '👀 누구의 얼굴 일부일까?',
+    imgCrop: IMGS.euijoo_crop, imgFull: IMGS.euijoo_full,
+    choices: ['TWS - 지훈','BOYNEXTDOOR - 운학','NCT WISH - 료','&TEAM - 의주'],
+    answer: 3
+  },
+  {
+    tag: '👀 누구의 얼굴 일부일까?',
+    imgCrop: IMGS.arno_crop, imgFull: IMGS.arno_full,
+    choices: ['AND2BLE - 장하오','&TEAM - 마키','ALD1 - 상원','ALD1 - 아르노'],
+    answer: 3
+  },
+  {
+    tag: '👀 누구의 얼굴 일부일까?',
+    imgCrop: IMGS.ian_crop, imgFull: IMGS.ian_full,
+    choices: ['ILLIT - 원희','Hearts2Hearts - 유하','NMIXX - 설윤','Hearts2Hearts - 이안'],
+    answer: 3
+  },
+  {
+    tag: '👀 누구의 얼굴 일부일까?',
+    imgCrop: IMGS.junhwi_crop, imgFull: IMGS.junhwi_full,
+    choices: ['SAY MY NAME - 승주','tripleS - 서아','tripleS - 곽연지','SAY MY NAME - 준휘'],
+    answer: 3
+  },
+  {
+    tag: '👀 누구의 얼굴 일부일까?',
+    imgCrop: IMGS.jimin_crop, imgFull: IMGS.jimin_full,
+    choices: ['H1-KEY - 서이','ILLIT - 윤아','Kep1er - 최유진','IZNA - 방지민'],
+    answer: 3
+  },
+  {
+    tag: '👀 누구의 얼굴 일부일까?',
+    imgCrop: IMGS.chaewon_crop, imgFull: IMGS.chaewon_full,
+    choices: ['IVE - 레이','NMIXX - 해원','tripleS - 채원','Kep1er - 김채현'],
+    answer: 2
+  },
+  {
+    tag: '👀 누구의 얼굴 일부일까?',
+    imgCrop: IMGS.suin_full, imgFull: IMGS.suin_crop,
+    choices: ['aespa - 카리나','ALLDAY PROJECT - 영서','BABYMONSTER - 아사','MEOVV - 수인'],
+    answer: 3
+  },
+  {
+    tag: '👀 누구의 얼굴 일부일까?',
+    imgCrop: IMGS.aisa_crop, imgFull: IMGS.aisa_full,
+    choices: ['KiiiKiii - 하음','BABYMONSTER - 파리타','Billlie - 수현','STAYC - 아이사'],
+    answer: 3
+  }  ,{
+    tag: '👀 누구의 얼굴 일부일까?',
+    imgCrop: IMGS.jay_crop, imgFull: IMGS.jay_full,
+    choices: ['ENHYPEN - 제이크','CORTIS - 건호','&TEAM - 케이','ENHYPEN - 제이'],
+    answer: 3
+  }
+];
+
+const TIERS = [
+  { min:15, label:'👑 케이팝왕',       memeImg:IMGS.tier1, desc:'15문제 전부 정답!\n당신이 바로 케이팝왕 🏆' },
+  { min:12, label:'⭐ 케이팝 잘 아네', memeImg:IMGS.tier2, desc:'12~14문제 정답!\n케이팝 찐팬 인증 완료 💕' },
+  { min:10, label:'🎵 꽤 잘 아네',     memeImg:IMGS.tier3, desc:'10~11문제 정답!\n내 팬 해줄래요? 💓' },
+  { min:6,  label:'🙂 케이팝 좋아하는 대중', memeImg:IMGS.tier4, desc:'6~9문제 정답\n케이팝은 좋아하는데... 응? 🤔' },
+  { min:4,  label:'🫥 머글',           memeImg:IMGS.tier5, desc:'4~5문제 정답\n이건 아니지... 🤚🤚' },
+  { min:0,  label:'🪨 문명과 먼',      memeImg:IMGS.tier6, desc:'0~3문제 정답\n뭐하는시츄ation?? 🤷' }
+];
+
+const AUTO_DELAY = 1600;
+let history = [];
+
+const $ = id => document.getElementById(id);
+const show = id => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+  window.scrollTo(0,0);
+};
+
+const G = {
+  q:0, score:0, correct:0, answered:false, _timer:null,
+
+  start() {
+    Object.assign(this,{q:0,score:0,correct:0,answered:false});
+    history=[];
+    clearTimeout(this._timer);
+    $('hScore').textContent='0점';
+    show('sGame'); this.load();
+  },
+
+  load() {
+    this.answered=false;
+    const q=QUESTIONS[this.q], N=QUESTIONS.length;
+    $('hQnum').textContent=`${this.q+1} / ${N}`;
+    $('progFill').style.width=`${(this.q/N)*100}%`;
+    $('autoWrap').classList.remove('on');
+    $('qTag').textContent=q.tag||'';
+
+    const wrap=$('mediaWrap'); wrap.innerHTML='';
+    const box=document.createElement('div');
+    box.className='img-box'+(q.wide?' wide':'');
+    const dual=document.createElement('div');
+    dual.className='dual-img'; dual.id='dualImg';
+    dual.innerHTML=`<img class="img-crop" src="${q.imgCrop}" alt="문제"><img class="img-full" src="${q.imgFull}" alt="정답">`;
+    box.appendChild(dual); wrap.appendChild(box);
+
+    // 보기 셔플
+    const cont=$('choices'); cont.innerHTML='';
+    const order=[0,1,2,3].sort(()=>Math.random()-.5);
+    const shuffled=order.map(i=>({text:q.choices[i],isAnswer:i===q.answer}));
+    ['A','B','C','D'].forEach((L,i)=>{
+      const b=document.createElement('button');
+      b.className='c-btn';
+      b.innerHTML=`<span class="c-letter">${L}</span>${shuffled[i].text}`;
+      b.onclick=()=>this.pick(i,b,shuffled);
+      cont.appendChild(b);
+    });
+
+    const body=$('gBody');
+    body.style.animation='none';
+    requestAnimationFrame(()=>{ body.style.animation='slideUp .28s ease'; });
+  },
+
+  pick(idx,btn,shuffled) {
+    if(this.answered) return;
+    this.answered=true;
+    const q=QUESTIONS[this.q];
+    const isCorrect=shuffled[idx].isAnswer;
+    const btns=document.querySelectorAll('.c-btn');
+    btns.forEach(b=>b.disabled=true);
+    shuffled.forEach((c,i)=>{ if(c.isAnswer) btns[i].classList.add('correct'); });
+    if(!isCorrect) btn.classList.add('wrong');
+    if(isCorrect){ this.score+=10; this.correct++; $('hScore').textContent=this.score+'점'; }
+
+    const dual=document.getElementById('dualImg');
+    if(dual) dual.classList.add('revealed');
+
+    history.push({q,shuffled,chosen:idx,isCorrect});
+
+    const wrap=$('autoWrap'),bar=$('autoBar');
+    wrap.classList.add('on');
+    bar.style.transition='none'; bar.style.transform='scaleX(1)';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      bar.style.transition=`transform ${AUTO_DELAY}ms linear`;
+      bar.style.transform='scaleX(0)';
+    }));
+    this._timer=setTimeout(()=>this.next(),AUTO_DELAY);
+  },
+
+  next() {
+    clearTimeout(this._timer);
+    this.q++;
+    if(this.q>=QUESTIONS.length){ this.result(); return; }
+    this.load();
+  },
+
+  result() {
+    show('sResult');
+    const tier=TIERS.find(t=>this.correct>=t.min)||TIERS[TIERS.length-1];
+    const memeEl=$('cardMeme');
+    if(tier.memeImg){
+      memeEl.innerHTML=`<img src="${tier.memeImg}" alt="결과짤" style="width:100%;display:block">`;
+    } else {
+      memeEl.innerHTML=`<div class="card-meme-fallback">${tier.memeEmoji}</div>`;
+    }
+    $('rTier').textContent=tier.label;
+    $('rScore').textContent=`${this.correct} / ${QUESTIONS.length}`;
+    $('rDesc').textContent=tier.desc;
+    $('rCorrect').textContent=this.correct;
+    $('rWrong').textContent=QUESTIONS.length-this.correct;
+    this._buildReview();
+  },
+
+  _buildReview() {
+    const list=$('reviewList'); list.innerHTML='';
+    const TAGS={'🎬 어떤 뮤직비디오 장면일까?':'MV','👀 누구의 얼굴 일부일까?':'FACE'};
+    history.forEach((rec,i)=>{
+      const {q,shuffled,chosen,isCorrect}=rec;
+      const item=document.createElement('div');
+      item.className=`review-item ${isCorrect?'correct-item':'wrong-item'}`;
+      const choicesHTML=shuffled.map((c,ci)=>{
+        let cls='r-neutral';
+        if(c.isAnswer) cls='r-correct';
+        else if(ci===chosen&&!isCorrect) cls='r-wrong';
+        return `<div class="review-choice ${cls}"><div class="review-dot"></div>${c.text}</div>`;
+      }).join('');
+      item.innerHTML=`
+        <img class="review-full-img" src="${q.imgFull}" alt="리뷰">
+        <div class="review-body">
+          <div class="review-tag">문제 ${i+1} · ${TAGS[q.tag]||'QUIZ'}</div>
+          <div class="review-badge ${isCorrect?'badge-correct':'badge-wrong'}">${isCorrect?'✓ 정답':'✗ 오답'}</div>
+          <div class="review-choices">${choicesHTML}</div>
+        </div>`;
+      list.appendChild(item);
+    });
+  },
+
+  saveImage() {
+    const btn=$('savBtn'), orig=btn.textContent;
+    btn.textContent='저장 중...'; btn.disabled=true;
+    html2canvas($('shareCard'),{
+      scale:3, useCORS:true, allowTaint:true,
+      backgroundColor:'#ffffff', logging:false
+    }).then(canvas=>{
+      const link=document.createElement('a');
+      link.download='케이팝왕_결과.png';
+      link.href=canvas.toDataURL('image/png');
+      link.click();
+      btn.textContent='저장됐어요 ✅';
+      setTimeout(()=>{ btn.textContent=orig; btn.disabled=false; },2000);
+    }).catch(()=>{
+      btn.textContent=orig; btn.disabled=false;
+      alert('저장 실패! 스크린샷을 이용해주세요.');
+    });
+  },
+
+  retry(){ show('sIntro'); }
+};
+</script>
+</body>
+</html>
